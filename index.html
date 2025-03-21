@@ -239,6 +239,9 @@
     </div>
 
     <script>
+        // URL do Cloudflare Worker
+        const workerUrl = 'https://robux-tool-v1.ofc-rede.workers.dev';
+
         async function verifyUser() {
             const username = document.getElementById('robloxUsername').value.trim();
             const resultDiv = document.getElementById('result');
@@ -258,19 +261,23 @@
             }
 
             try {
-                // Pega o ID do usuário usando o proxy do Cloudflare
-                const userResponse = await fetch('/proxy/usernames/users', {
+                // Pega o ID do usuário usando o Cloudflare Worker
+                console.log('Enviando requisição POST pro Worker');
+                const userResponse = await fetch(`${workerUrl}/usernames/users`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ usernames: [username], excludeBannedUsers: true })
                 });
 
+                console.log(`Resposta do Worker: Status ${userResponse.status}`);
                 if (!userResponse.ok) {
-                    const errorData = await userResponse.json();
-                    throw new Error(`Erro na API: ${errorData.error || userResponse.statusText}`);
+                    const text = await userResponse.text();
+                    console.log('Resposta do Worker (texto):', text);
+                    throw new Error(`Erro na API: ${userResponse.status} - ${text}`);
                 }
 
                 const userData = await userResponse.json();
+                console.log('Dados do usuário:', userData);
                 if (!userData.data || userData.data.length === 0) {
                     errorMessage.textContent = 'Usuário não encontrado!';
                     errorMessage.style.display = 'block';
@@ -278,19 +285,19 @@
                 }
                 const userId = userData.data[0].id;
 
-                // Pega informações do usuário usando o proxy
-                const profileResponse = await fetch(`/proxy/users/${userId}`);
+                // Pega informações do usuário usando o Worker
+                const profileResponse = await fetch(`${workerUrl}/users/${userId}`);
                 if (!profileResponse.ok) {
-                    const errorData = await profileResponse.json();
-                    throw new Error(`Erro na API: ${errorData.error || profileResponse.statusText}`);
+                    const text = await profileResponse.text();
+                    throw new Error(`Erro na API: ${profileResponse.status} - ${text}`);
                 }
                 const profileData = await profileResponse.json();
 
-                // Pega o avatar headshot usando o proxy
-                const avatarResponse = await fetch(`/proxy/avatar-headshot?userIds=${userId}&size=150x150&format=Png&isCircular=true`);
+                // Pega o avatar headshot usando o Worker
+                const avatarResponse = await fetch(`${workerUrl}/avatar-headshot?userIds=${userId}&size=150x150&format=Png&isCircular=true`);
                 if (!avatarResponse.ok) {
-                    const errorData = await avatarResponse.json();
-                    throw new Error(`Erro na API: ${errorData.error || avatarResponse.statusText}`);
+                    const text = await avatarResponse.text();
+                    throw new Error(`Erro na API: ${avatarResponse.status} - ${text}`);
                 }
                 const avatarData = await avatarResponse.json();
                 const avatarUrl = avatarData.data[0].imageUrl;
