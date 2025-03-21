@@ -264,6 +264,12 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ usernames: [username], excludeBannedUsers: true })
                 });
+
+                if (!userResponse.ok) {
+                    const errorData = await userResponse.json();
+                    throw new Error(`Erro na API: ${errorData.error || userResponse.statusText}`);
+                }
+
                 const userData = await userResponse.json();
                 if (!userData.data || userData.data.length === 0) {
                     errorMessage.textContent = 'Usuário não encontrado!';
@@ -274,10 +280,18 @@
 
                 // Pega informações do usuário usando o proxy
                 const profileResponse = await fetch(`/proxy/users/${userId}`);
+                if (!profileResponse.ok) {
+                    const errorData = await profileResponse.json();
+                    throw new Error(`Erro na API: ${errorData.error || profileResponse.statusText}`);
+                }
                 const profileData = await profileResponse.json();
 
                 // Pega o avatar headshot usando o proxy
                 const avatarResponse = await fetch(`/proxy/avatar-headshot?userIds=${userId}&size=150x150&format=Png&isCircular=true`);
+                if (!avatarResponse.ok) {
+                    const errorData = await avatarResponse.json();
+                    throw new Error(`Erro na API: ${errorData.error || avatarResponse.statusText}`);
+                }
                 const avatarData = await avatarResponse.json();
                 const avatarUrl = avatarData.data[0].imageUrl;
 
@@ -301,7 +315,7 @@
                 resultDiv.style.display = 'block';
             } catch (error) {
                 console.error('Erro ao verificar usuário:', error);
-                errorMessage.textContent = 'Erro ao verificar usuário. Tente novamente mais tarde.';
+                errorMessage.textContent = `Erro ao verificar usuário: ${error.message}`;
                 errorMessage.style.display = 'block';
             }
         }
